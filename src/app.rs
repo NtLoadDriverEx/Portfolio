@@ -1,6 +1,6 @@
-use eframe::{egui};
-use rand_chacha::ChaCha20Rng;
+use eframe::egui;
 use rand::prelude::*;
+use rand_chacha::ChaCha20Rng;
 
 #[derive(Copy, Clone, Debug)]
 struct Point {
@@ -30,7 +30,7 @@ impl Default for PortfolioApp {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
-            background: Background::default()
+            background: Background::default(),
         }
     }
 }
@@ -46,7 +46,7 @@ impl eframe::App for PortfolioApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let screen_size = ctx.screen_rect();
-        if !self.background.has_points(){
+        if !self.background.has_points() {
             let mut new_points: Vec<Point> = Vec::new();
 
             let mut rng = ChaCha20Rng::from_entropy();
@@ -65,8 +65,10 @@ impl eframe::App for PortfolioApp {
             self.background.add_points(new_points);
         }
 
-
-        self.background.update_points(ctx.pointer_latest_pos().unwrap_or(egui::Pos2::ZERO), egui::vec2(screen_size.width(), screen_size.height()));
+        self.background.update_points(
+            ctx.pointer_latest_pos().unwrap_or(egui::Pos2::ZERO),
+            egui::vec2(screen_size.width(), screen_size.height()),
+        );
         self.background.calculate_collisions();
 
         let commands = self.background.prepare_draw_data();
@@ -74,10 +76,18 @@ impl eframe::App for PortfolioApp {
 
         for command in commands {
             match command {
-                DrawCommand::Circle { center, radius, color } => {
+                DrawCommand::Circle {
+                    center,
+                    radius,
+                    color,
+                } => {
                     painter.circle_filled(center, radius, color);
                 }
-                DrawCommand::Line { points, width, color } => {
+                DrawCommand::Line {
+                    points,
+                    width,
+                    color,
+                } => {
                     painter.line_segment(points, (width, color));
                 }
             }
@@ -91,7 +101,6 @@ impl eframe::App for PortfolioApp {
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 }
-
 
 fn distance(p1: egui::Pos2, p2: egui::Pos2) -> f32 {
     ((p2.x - p1.x).powi(2) + (p2.y - p1.y).powi(2)).sqrt()
@@ -110,11 +119,11 @@ impl Background {
         }
     }
 
-    fn has_points(& self) -> bool {
-        return !self.points.is_empty()
+    fn has_points(&self) -> bool {
+        !self.points.is_empty()
     }
 
-    fn add_points(&mut self, points: Vec<Point>){
+    fn add_points(&mut self, points: Vec<Point>) {
         self.points = points;
     }
 
@@ -156,7 +165,8 @@ impl Background {
             active_intervals.retain(|&j| (self.points[j].x + PT_LINE_DISTANCE) > point.x);
 
             for &j in &active_intervals {
-                let range_inclusive = (self.points[j].x - PT_LINE_DISTANCE)..=(self.points[j].x + PT_LINE_DISTANCE);
+                let range_inclusive =
+                    (self.points[j].x - PT_LINE_DISTANCE)..=(self.points[j].x + PT_LINE_DISTANCE);
                 if range_inclusive.contains(&point.x) {
                     self.collisions.push((j, i));
                 }
@@ -181,13 +191,20 @@ impl Background {
         for &(idx1, idx2) in &self.collisions {
             let point = &self.points[idx1];
             let other = &self.points[idx2];
-            let dist = distance(egui::Pos2::new(point.x, point.y), egui::Pos2::new(other.x, other.y));
+            let dist = distance(
+                egui::Pos2::new(point.x, point.y),
+                egui::Pos2::new(other.x, other.y),
+            );
 
             if dist < PT_LINE_DISTANCE {
                 let opacity = (PT_LINE_DISTANCE - dist) / PT_LINE_DISTANCE;
-                let color = egui::Color32::from_rgba_unmultiplied(164, 171, 176, (opacity * 127.5) as u8);
+                let color =
+                    egui::Color32::from_rgba_unmultiplied(164, 171, 176, (opacity * 127.5) as u8);
                 commands.push(DrawCommand::Line {
-                    points: [egui::Pos2::new(point.x, point.y), egui::Pos2::new(other.x, other.y)],
+                    points: [
+                        egui::Pos2::new(point.x, point.y),
+                        egui::Pos2::new(other.x, other.y),
+                    ],
                     width: 0.5,
                     color,
                 });
