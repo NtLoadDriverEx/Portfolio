@@ -1,6 +1,6 @@
 # eframe template
 
-[![Build Status](https://github.com/emilk/exceptis_portfolio/workflows/CI/badge.svg)](https://github.com/emilk/exceptis_portfolio/actions?workflow=CI)
+[![Build Status](https://github.com/emilk/Portfolio/workflows/CI/badge.svg)](https://github.com/emilk/Portfolio/actions?workflow=CI)
 
 The goal is for this to be the simplest way to get started writing a GUI app in Rust.
 
