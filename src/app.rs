@@ -17,6 +17,8 @@ pub struct PortfolioApp {
     // Example stuff:
     label: String,
 
+    text: String,
+
     #[serde(skip)]
     background: Background,
 
@@ -29,6 +31,7 @@ impl Default for PortfolioApp {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
+            text: String::new(),
             value: 2.7,
             background: Background::default(),
         }
@@ -47,51 +50,57 @@ impl eframe::App for PortfolioApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let screen_size = ctx.screen_rect();
         if !self.background.has_points() {
-            let mut new_points: Vec<Point> = Vec::new();
-
-            let mut rng = ChaCha20Rng::from_entropy();
-
-            let num_points: i32 = ((screen_size.width() / 3.0) * 0.2) as i32;
-
-            for _ in 0..num_points {
-                new_points.push(Point {
-                    x: rng.gen_range(0.0..screen_size.width()),
-                    y: rng.gen_range(0.0..screen_size.height()),
-                    xv: rng.gen_range(-12.0..=12.0),
-                    yv: rng.gen_range(-12.0..=12.0),
-                });
-            }
-
-            self.background.add_points(new_points);
+            self.background.add_points(screen_size)
         }
 
         self.background.update_points(
             ctx.pointer_latest_pos().unwrap_or(egui::Pos2::ZERO),
-            egui::vec2(screen_size.width(), screen_size.height()),
+            screen_size,
         );
         self.background.calculate_collisions();
 
-        let commands = self.background.prepare_draw_data();
         let painter = ctx.layer_painter(egui::LayerId::background());
+        self.background.render_draw_data(painter);
 
-        for command in commands {
-            match command {
-                DrawCommand::Circle {
-                    center,
-                    radius,
-                    color,
-                } => {
-                    painter.circle_filled(center, radius, color);
-                }
-                DrawCommand::Line {
-                    points,
-                    width,
-                    color,
-                } => {
-                    painter.line_segment(points, (width, color));
-                }
-            }
-        }
+        // let _clear_frame = egui::Frame {
+        //     fill: egui::Color32::from_rgba_premultiplied(0, 0, 0, 0),
+        //     ..egui::Frame::default()
+        // };
+
+        egui::Window::new("Bio")
+            .resizable(true)
+            .max_size(egui::vec2(1000.0, 1000.0))
+            .show(ctx, |ui| {
+                ui.heading("Stuart Downing");
+                ui.label("Passionate problem-solver and self-taught developer. I am quick to grasp new ideas, and adept at programming, particularly in low-level languages such as C++ and Rust.\
+                 I enjoy solving complicated problems, where I can develop my skills with precision and efficiency.");
+
+        });
+
+        egui::Window::new("Experience")
+            .resizable(true)
+            .max_size(egui::vec2(1000.0, 1000.0))
+            .show(ctx, |ui| {
+                ui.heading("Lucid Software, 2022 - 2024");
+                ui.label("Role: Software Engineer");
+                ui.text_edit_multiline(
+                    &mut "Sole developer of android app for an educational platform.\nNotable features include document scanning using OpenCV.\nLearned Kotlin and applied in 1 month.\nWorked in a fast paced team environment.",
+                );
+
+
+                ui.heading("Freelance Projects, 2020 - 2023");
+                ui.label("Role: Software Engineer/Project Manager");
+                ui.text_edit_multiline(
+                    &mut "Managed and engineered multiple projects in C/C++ involving Win32.
+Used python to write high performance scripts for personal projects and commercial applications.
+Used x86 assembly with C to write complicated hooking libraries and manipulate virtual memory.
+Experience in writing assembly and usage of intrinsics.
+Usage of SQL and databases and interoperability between Java and C++.
+Experience in graphics libraries like DirectX and Vulkan.
+Lots of experience debugging and reverse engineering application errors.
+");
+            });
+
         // draw in continuous mode.
         ctx.request_repaint();
     }
@@ -123,11 +132,25 @@ impl Background {
         !self.points.is_empty()
     }
 
-    fn add_points(&mut self, points: Vec<Point>) {
-        self.points = points;
+    fn add_points(&mut self, screen_size: egui::Rect) {
+        let mut new_points: Vec<Point> = Vec::new();
+
+        let mut rng = ChaCha20Rng::from_entropy();
+
+        let num_points: i32 = ((screen_size.width() / 3.0) * 0.2) as i32;
+
+        for _ in 0..num_points {
+            new_points.push(Point {
+                x: rng.gen_range(0.0..screen_size.width()),
+                y: rng.gen_range(0.0..screen_size.height()),
+                xv: rng.gen_range(-12.0..=12.0),
+                yv: rng.gen_range(-12.0..=12.0),
+            });
+        }
+        self.points = new_points;
     }
 
-    fn update_points(&mut self, mouse_pos: egui::Pos2, screen_size: egui::Vec2) {
+    fn update_points(&mut self, mouse_pos: egui::Pos2, screen_size: egui::Rect) {
         for point in &mut self.points {
             // Update point velocity and position
             point.x += 0.1 * point.xv;
@@ -146,8 +169,8 @@ impl Background {
             point.yv *= if point.yv.abs() > 12.0 { 0.92 } else { 1.0 };
 
             // Wrap around screen edges
-            point.x = point.x.rem_euclid(screen_size.x);
-            point.y = point.y.rem_euclid(screen_size.y);
+            point.x = point.x.rem_euclid(screen_size.width());
+            point.y = point.y.rem_euclid(screen_size.height());
         }
     }
 
@@ -212,6 +235,27 @@ impl Background {
         }
 
         commands
+    }
+
+    fn render_draw_data(&self, painter: egui::Painter) {
+        for command in self.prepare_draw_data() {
+            match command {
+                DrawCommand::Circle {
+                    center,
+                    radius,
+                    color,
+                } => {
+                    painter.circle_filled(center, radius, color);
+                }
+                DrawCommand::Line {
+                    points,
+                    width,
+                    color,
+                } => {
+                    painter.line_segment(points, (width, color));
+                }
+            }
+        }
     }
 }
 
