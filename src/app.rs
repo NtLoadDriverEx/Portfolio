@@ -69,7 +69,8 @@ impl eframe::App for PortfolioApp {
 
         egui::Window::new("Bio")
             .resizable(true)
-            .max_size(egui::vec2(1000.0, 1000.0))
+            .default_width(500.)
+            .default_height(500.)
             .show(ctx, |ui| {
                 ui.heading("Stuart Downing");
                 ui.label("Passionate problem-solver and self-taught developer. I am quick to grasp new ideas, and adept at programming, particularly in low-level languages such as C++ and Rust.\
