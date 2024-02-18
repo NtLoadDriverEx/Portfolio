@@ -8,11 +8,12 @@ use rand_chacha::ChaCha20Rng;
 #[derive(serde::Deserialize)]
 struct TextContents {
     work_experience: WorkExperience,
-    biography: Biography,
+    biography: TextBlock,
+    about_page: TextBlock,
 }
 
 #[derive(serde::Deserialize)]
-struct Biography {
+struct TextBlock {
     text: String,
 }
 
@@ -39,6 +40,8 @@ pub struct PortfolioApp {
 
     #[serde(skip)]
     background: Background,
+
+    about_page: bool,
 }
 
 impl Default for PortfolioApp {
@@ -51,6 +54,7 @@ impl Default for PortfolioApp {
             label: "Hello World!".to_owned(),
             parsed_text: text_contents,
             background: Background::default(),
+            about_page: true,
         }
     }
 }
@@ -66,6 +70,7 @@ impl eframe::App for PortfolioApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let screen_size = ctx.screen_rect();
+        let text_window_max_width: f32 = screen_size.width();
 
         if !self.background.has_points() {
             self.background.add_points(screen_size)
@@ -98,11 +103,24 @@ impl eframe::App for PortfolioApp {
                         "https://github.com/NtLoadDriverEx/Portfolio",
                     );
                     ui.add(source_link);
+
+                    if ui.selectable_label(self.about_page, "About").clicked() {
+                        self.about_page = !self.about_page;
+                    }
                 });
             });
 
+        let about_window = egui::Window::new("About").auto_sized();
+        if self.about_page {
+            about_window.show(ctx, |ui| {
+                ui.allocate_ui(egui::vec2(250f32.min(text_window_max_width), 150.), |ui| {
+                    easy_mark(ui, &self.parsed_text.about_page.text);
+                });
+            });
+        }
+
         egui::Window::new("Bio").auto_sized().show(ctx, |ui| {
-            ui.allocate_ui(egui::vec2(500., 2000.), |ui| {
+            ui.allocate_ui(egui::vec2(500f32.min(text_window_max_width), 2000.), |ui| {
                 easy_mark(ui, &self.parsed_text.biography.text);
             });
         });
@@ -110,7 +128,7 @@ impl eframe::App for PortfolioApp {
         egui::Window::new("Experience")
             .auto_sized()
             .show(ctx, |ui| {
-                ui.allocate_ui(egui::vec2(700., 1000.), |ui| {
+                ui.allocate_ui(egui::vec2(700f32.min(text_window_max_width), 1000.), |ui| {
                     let lucid = &self.parsed_text.work_experience.lucid_software;
                     easy_mark(ui, &lucid.description);
 

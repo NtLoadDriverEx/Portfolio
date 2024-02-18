@@ -11,12 +11,17 @@
 ## How?
 This project is based on [eframe_template](https://github.com/emilk/eframe_template/) built in Rust targeting wasm to run
 in the browser.
+
+## What
+This is my portfolio project. It is meant to highlight my job history and previous projects as well as be a project in 
+and of itself to show off my programming abilities in an interesting and engaging way.
 ## Goals
 - [x] Write a better readme
 - [ ] Expand each set of windows into their own components (make `.rs` files for each 'page')
 - [ ] Make a stock / trading view component
 - [ ] Make a pretty component with graphics and FFT generated audio for rain noises
 - [ ] Make a mini-game component complete with audio and enjoyable (and simple) gameplay in 2d
+- [ ] Chaos Equation viewer and editor (CodeParade)
 ### Project Structure
 `src/app.rs` conatins the main page layout as you would expect in any web project written in Javascript for example.
 `assets/text_contents.toml` contains each widgets large text content. For example if you have a large EasyMark document 

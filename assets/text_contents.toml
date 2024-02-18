@@ -22,9 +22,11 @@ description = '''# Freelance Projects, 2020 - 2023
 - Experience in graphics libraries like *DirectX* and *Vulkan*.
 - Lots of experience *debugging* and *reverse engineering* application errors.'''
 
+[about_page]
+text = '''This is my portfolio project. It is meant to highlight my job history and previous projects as well as be a project in and of itself to show off my programming abilities in an interesting and engaging way.'''
+
 [biography]
-text = '''# Stuart Downing
-Hi, I'm Stuart an engineer from Acworth, Georgia, with a interest in solving complex software challenges. At Lucid Software, I took the lead on developing an Android app for an educational platform, diving headfirst into Kotlin and mastering it in just a month. This project was more than just coding for me; it involved integrating sophisticated document scanning features using OpenCV, showcasing my ability to quickly learn and apply new technologies to practical solutions.
+text = '''Hi, I'm Stuart an engineer from Acworth, Georgia, with a interest in solving complex software challenges. At Lucid Software, I took the lead on developing an Android app for an educational platform, diving headfirst into Kotlin and mastering it in just a month. This project was more than just coding for me; it involved integrating sophisticated document scanning features using OpenCV, showcasing my ability to quickly learn and apply new technologies to practical solutions.
 
 During my time doing freelance work from 2020 to 2023, I had the opportunity to tackle a variety of projects both personal and for clients, primarily focusing on my strengths in C\/C++ and the Win32 API. I also ventured into Python to develop high-performance scripts for both personal and commercial projects. I also worked with x86 assembly and C to create advanced hooking libraries.
 
