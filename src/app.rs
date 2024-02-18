@@ -1,13 +1,30 @@
 use eframe::egui;
+
+use crate::easy_mark_viewer::easy_mark;
 use rand::prelude::*;
 use rand_chacha::ChaCha20Rng;
 
-#[derive(Copy, Clone, Debug)]
-struct Point {
-    x: f32,
-    y: f32,
-    xv: f32,
-    yv: f32,
+// Define structs that match the TOML structure
+#[derive(serde::Deserialize)]
+struct TextContents {
+    work_experience: WorkExperience,
+    biography: Biography,
+}
+
+#[derive(serde::Deserialize)]
+struct Biography {
+    text: String,
+}
+
+#[derive(serde::Deserialize)]
+struct WorkExperience {
+    lucid_software: ExperienceDetails,
+    freelance_projects: ExperienceDetails,
+}
+
+#[derive(serde::Deserialize)]
+struct ExperienceDetails {
+    description: String,
 }
 
 /// We derive Deserialize/Serialize, so we can persist app state on shutdown.
@@ -17,22 +34,22 @@ pub struct PortfolioApp {
     // Example stuff:
     label: String,
 
-    text: String,
+    #[serde(skip)]
+    parsed_text: TextContents,
 
     #[serde(skip)]
     background: Background,
-
-    #[serde(skip)] // This how you opt out of serialization of a field
-    value: f32,
 }
 
 impl Default for PortfolioApp {
     fn default() -> Self {
+        let text_contents: TextContents =
+            toml::from_str(include_str!("../assets/text_contents.toml"))
+                .expect("Failed to parse TOML");
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            text: String::new(),
-            value: 2.7,
+            parsed_text: text_contents,
             background: Background::default(),
         }
     }
@@ -49,57 +66,59 @@ impl eframe::App for PortfolioApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let screen_size = ctx.screen_rect();
+        let min_side = screen_size.width().min(screen_size.height());
+        let button_size = min_side * 0.05;
+
         if !self.background.has_points() {
             self.background.add_points(screen_size)
         }
 
+        let input = ctx.input(|input| input.clone());
         self.background.update_points(
             ctx.pointer_latest_pos().unwrap_or(egui::Pos2::ZERO),
             screen_size,
+            &input.unstable_dt,
         );
+
         self.background.calculate_collisions();
 
         let painter = ctx.layer_painter(egui::LayerId::background());
         self.background.render_draw_data(painter);
 
-        // let _clear_frame = egui::Frame {
-        //     fill: egui::Color32::from_rgba_premultiplied(0, 0, 0, 0),
-        //     ..egui::Frame::default()
-        // };
+        let clear_frame = egui::Frame {
+            fill: egui::Color32::from_rgba_premultiplied(0, 0, 0, 0),
+            ..egui::Frame::default()
+        };
 
-        egui::Window::new("Bio")
-            .resizable(true)
-            .default_width(500.)
-            .default_height(500.)
+        egui::TopBottomPanel::top("top_panel")
+            .frame(clear_frame)
             .show(ctx, |ui| {
-                ui.heading("Stuart Downing");
-                ui.label("Passionate problem-solver and self-taught developer. I am quick to grasp new ideas, and adept at programming, particularly in low-level languages such as C++ and Rust.\
-                 I enjoy solving complicated problems, where I can develop my skills with precision and efficiency.");
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    egui::widgets::global_dark_light_mode_buttons(ui);
+                    let source_link = egui::Hyperlink::from_label_and_url(
+                        "Source",
+                        "https://github.com/NtLoadDriverEx/Portfolio",
+                    );
+                    ui.add(source_link);
+                });
+            });
 
+        egui::Window::new("Bio").auto_sized().show(ctx, |ui| {
+            ui.allocate_ui(egui::vec2(500., 2000.), |ui| {
+                easy_mark(ui, &self.parsed_text.biography.text);
+            });
         });
 
         egui::Window::new("Experience")
-            .resizable(true)
-            .max_size(egui::vec2(1000.0, 1000.0))
+            .auto_sized()
             .show(ctx, |ui| {
-                ui.heading("Lucid Software, 2022 - 2024");
-                ui.label("Role: Software Engineer");
-                ui.text_edit_multiline(
-                    &mut "Sole developer of android app for an educational platform.\nNotable features include document scanning using OpenCV.\nLearned Kotlin and applied in 1 month.\nWorked in a fast paced team environment.",
-                );
+                ui.allocate_ui(egui::vec2(700., 1000.), |ui| {
+                    let lucid = &self.parsed_text.work_experience.lucid_software;
+                    easy_mark(ui, &lucid.description);
 
-
-                ui.heading("Freelance Projects, 2020 - 2023");
-                ui.label("Role: Software Engineer/Project Manager");
-                ui.text_edit_multiline(
-                    &mut "Managed and engineered multiple projects in C/C++ involving Win32.
-Used python to write high performance scripts for personal projects and commercial applications.
-Used x86 assembly with C to write complicated hooking libraries and manipulate virtual memory.
-Experience in writing assembly and usage of intrinsics.
-Usage of SQL and databases and interoperability between Java and C++.
-Experience in graphics libraries like DirectX and Vulkan.
-Lots of experience debugging and reverse engineering application errors.
-");
+                    let freelance = &self.parsed_text.work_experience.freelance_projects;
+                    easy_mark(ui, &freelance.description);
+                });
             });
 
         // draw in continuous mode.
@@ -112,10 +131,20 @@ Lots of experience debugging and reverse engineering application errors.
     }
 }
 
-fn distance(p1: egui::Pos2, p2: egui::Pos2) -> f32 {
+const PT_LINE_DISTANCE: f32 = 120.0;
+
+#[derive(Copy, Clone, Debug)]
+struct Point {
+    x: f32,
+    y: f32,
+    xv: f32,
+    yv: f32,
+}
+
+fn distance(p1: &Point, p2: &Point) -> f32 {
     ((p2.x - p1.x).powi(2) + (p2.y - p1.y).powi(2)).sqrt()
 }
-const PT_LINE_DISTANCE: f32 = 120.0;
+
 struct Background {
     points: Vec<Point>,
     collisions: Vec<(usize, usize)>, // Stores tuples of indices of colliding points
@@ -138,24 +167,25 @@ impl Background {
 
         let mut rng = ChaCha20Rng::from_entropy();
 
-        let num_points: i32 = ((screen_size.width() / 3.0) * 0.2) as i32;
+        let num_points: i32 = ((screen_size.width() / 3.0) * 0.5) as i32;
 
         for _ in 0..num_points {
             new_points.push(Point {
                 x: rng.gen_range(0.0..screen_size.width()),
                 y: rng.gen_range(0.0..screen_size.height()),
-                xv: rng.gen_range(-12.0..=12.0),
-                yv: rng.gen_range(-12.0..=12.0),
+                xv: rng.gen_range(-500.0..=500.0),
+                yv: rng.gen_range(-500.0..=500.0),
             });
         }
         self.points = new_points;
     }
 
-    fn update_points(&mut self, mouse_pos: egui::Pos2, screen_size: egui::Rect) {
+    fn update_points(&mut self, mouse_pos: egui::Pos2, screen_size: egui::Rect, dt: &f32) {
         for point in &mut self.points {
             // Update point velocity and position
-            point.x += 0.1 * point.xv;
-            point.y += 0.1 * point.yv;
+
+            point.x += point.xv * dt * 10.;
+            point.y += point.yv * dt * 10.;
 
             // Repel from mouse cursor
             let distance_to_mouse = (egui::Pos2::new(point.x, point.y) - mouse_pos).length();
@@ -186,16 +216,24 @@ impl Background {
 
         for &i in &sorted_points {
             let point = &self.points[i];
-            active_intervals.retain(|&j| (self.points[j].x + PT_LINE_DISTANCE) > point.x);
 
+            // Remove points from active intervals that are too far behind the current point
+            active_intervals.retain(|&j| self.points[j].x + PT_LINE_DISTANCE >= point.x);
+
+            // Check for collisions within the active intervals
             for &j in &active_intervals {
-                let range_inclusive =
-                    (self.points[j].x - PT_LINE_DISTANCE)..=(self.points[j].x + PT_LINE_DISTANCE);
-                if range_inclusive.contains(&point.x) {
-                    self.collisions.push((j, i));
+                // Ensure we only check collisions for distinct points
+                if j != i {
+                    let distance = (self.points[j].x - point.x).abs();
+                    if distance <= PT_LINE_DISTANCE {
+                        // Since we are dealing with 1D intervals, a simple distance check is sufficient
+                        // For 2D or 3D, you'd need more complex overlap checks
+                        self.collisions.push((j, i));
+                    }
                 }
             }
 
+            // Add the current point to active intervals
             active_intervals.push(i);
         }
     }
@@ -215,10 +253,7 @@ impl Background {
         for &(idx1, idx2) in &self.collisions {
             let point = &self.points[idx1];
             let other = &self.points[idx2];
-            let dist = distance(
-                egui::Pos2::new(point.x, point.y),
-                egui::Pos2::new(other.x, other.y),
-            );
+            let dist = distance(point, other);
 
             if dist < PT_LINE_DISTANCE {
                 let opacity = (PT_LINE_DISTANCE - dist) / PT_LINE_DISTANCE;

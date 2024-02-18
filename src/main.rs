@@ -15,6 +15,7 @@ fn main() -> eframe::Result<()> {
                 eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-256.png")[..])
                     .unwrap(),
             ),
+        vsync: false,
         ..Default::default()
     };
     eframe::run_native(
@@ -30,7 +31,8 @@ fn main() {
     // Redirect `log` message to `console.log` and friends:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
-    let web_options = eframe::WebOptions::default();
+    let mut web_options = eframe::WebOptions::default();
+    web_options.webgl_context_option = eframe::WebGlContextOption::BestFirst;
     wasm_bindgen_futures::spawn_local(async {
         eframe::WebRunner::new()
             .start(

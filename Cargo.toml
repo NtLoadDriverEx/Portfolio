@@ -19,6 +19,7 @@ getrandom = { version = "0.2", features = ["js"] }
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
+toml = "0.8.10"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 
