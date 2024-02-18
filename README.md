@@ -1,34 +1,31 @@
-# eframe template
+# Stuart Downing Portfolio
+
+
+<br>
+<div style="display: flex;
+  justify-content: center;
+  align-items: center;
+background-color: #0000ff25;">
+<img width="192" src=".github/assets/cool_s.svg" alt="">
+</div>
 
 [![Build Status](https://github.com/NtLoadDriverEx/Portfolio/workflows/CI/badge.svg)](https://github.com/NtLoadDriverEx/Portfolio/actions?workflow=CI)
 
-The goal is for this to be the simplest way to get started writing a GUI app in Rust.
-
-You can compile your app natively or for the web, and share it using Github Pages.
-
-## Getting started
-
-Start by clicking "Use this template" at https://github.com/emilk/eframe_template/ or follow [these instructions](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
-
-Change the name of the crate: Chose a good name for your project, and change the name to it in:
-* `Cargo.toml`
-    * Change the `package.name` from `eframe_template` to `your_crate`.
-    * Change the `package.authors`
-* `main.rs`
-    * Change `eframe_template::TemplateApp` to `your_crate::TemplateApp`
-* `index.html`
-    * Change the `<title>eframe template</title>` to `<title>your_crate</title>`. optional.
-* `assets/sw.js`
-  * Change the `'./eframe_template.js'` to `./your_crate.js` (in `filesToCache` array)
-  * Change the `'./eframe_template_bg.wasm'` to `./your_crate_bg.wasm` (in `filesToCache` array)
-
-### Learning about egui
-
-`src/app.rs` contains a simple example app. This is just to give some inspiration - most of it can be removed if you like.
-
-The official egui docs are at <https://docs.rs/egui>. If you prefer watching a video introduction, check out <https://www.youtube.com/watch?v=NtUkr_z7l84>. For inspiration, check out the [the egui web demo](https://emilk.github.io/egui/index.html) and follow the links in it to its source code.
-
-### Testing locally
+## How?
+This project is based on [eframe_template](https://github.com/emilk/eframe_template/) built in Rust targeting wasm to run
+in the browser.
+## Goals
+- [x] Write a better readme
+- [ ] Expand each set of windows into their own components (make `.rs` files for each 'page')
+- [ ] Make a stock / trading view component
+- [ ] Make a pretty component with graphics and FFT generated audio for rain noises
+- [ ] Make a mini-game component complete with audio and enjoyable (and simple) gameplay in 2d
+### Project Structure
+`src/app.rs` conatins the main page layout as you would expect in any web project written in Javascript for example.
+`assets/text_contents.toml` contains each widgets large text content. For example if you have a large EasyMark document 
+you don't want that stored in your `.rs` file as that would bloat your code.
+ 
+### Running Natively
 
 Make sure you are using the latest version of stable rust by running `rustup update`.
 
@@ -65,9 +62,3 @@ We use [Trunk](https://trunkrs.dev/) to build for web target.
 > If `gh-pages` is not available in `Source`, just create and push a branch called `gh-pages` and it should be available.
 
 You can test the template app at <https://emilk.github.io/eframe_template/>.
-
-## Updating egui
-
-As of 2023, egui is in active development with frequent releases with breaking changes. [eframe_template](https://github.com/emilk/eframe_template/) will be updated in lock-step to always use the latest version of egui.
-
-When updating `egui` and `eframe` it is recommended you do so one version at the time, and read about the changes in [the egui changelog](https://github.com/emilk/egui/blob/master/CHANGELOG.md) and [eframe changelog](https://github.com/emilk/egui/blob/master/crates/eframe/CHANGELOG.md).
