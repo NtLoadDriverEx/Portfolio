@@ -2,12 +2,9 @@
 
 
 <br>
-<div style="display: flex;
-  justify-content: center;
-  align-items: center;
-background-color: #0000ff25;">
+<p align="center">
 <img width="192" src=".github/assets/cool_s.svg" alt="">
-</div>
+</p>
 
 [![Build Status](https://github.com/NtLoadDriverEx/Portfolio/workflows/CI/badge.svg)](https://github.com/NtLoadDriverEx/Portfolio/actions?workflow=CI)
 
