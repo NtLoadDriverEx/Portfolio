@@ -66,8 +66,6 @@ impl eframe::App for PortfolioApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let screen_size = ctx.screen_rect();
-        let min_side = screen_size.width().min(screen_size.height());
-        let button_size = min_side * 0.05;
 
         if !self.background.has_points() {
             self.background.add_points(screen_size)
