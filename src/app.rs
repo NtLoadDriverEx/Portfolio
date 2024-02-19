@@ -70,7 +70,7 @@ impl eframe::App for PortfolioApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let screen_size = ctx.screen_rect();
-        let text_window_max_width: f32 = screen_size.width();
+        let text_window_max_width: f32 = screen_size.width() - screen_size.width() * 0.2;
 
         if !self.background.has_points() {
             self.background.add_points(screen_size)
@@ -157,8 +157,67 @@ struct Point {
     yv: f32,
 }
 
-fn distance(p1: &Point, p2: &Point) -> f32 {
-    ((p2.x - p1.x).powi(2) + (p2.y - p1.y).powi(2)).sqrt()
+impl Point {
+    // Normalize the point's velocity
+    fn distance(p1: &Point, p2: &Point) -> f32 {
+        ((p2.x - p1.x).powi(2) + (p2.y - p1.y).powi(2)).sqrt()
+    }
+    // Function to calculate the unit vector from one point to another
+    fn direction_to(&self, other: &Point) -> Point {
+        let dx = other.x - self.x;
+        let dy = other.y - self.y;
+        let dist = Point::distance(self, other);
+        Point {
+            x: dx / dist,
+            y: dy / dist,
+            xv: 0.0,
+            yv: 0.0,
+        }
+    }
+
+    // Elastic collision logic, assuming equal mass for simplicity
+    fn elastic_collision(p1: &mut Point, p2: &mut Point) {
+        let unit_normal = p1.direction_to(p2);
+        let unit_tangent = Point {
+            x: -unit_normal.y,
+            y: unit_normal.x,
+            xv: 0.0,
+            yv: 0.0,
+        };
+
+        // Decompose velocities into normal and tangent components
+        let v1n = unit_normal.x * p1.xv + unit_normal.y * p1.yv;
+        let v1t = unit_tangent.x * p1.xv + unit_tangent.y * p1.yv;
+
+        let v2n = unit_normal.x * p2.xv + unit_normal.y * p2.yv;
+        let v2t = unit_tangent.x * p2.xv + unit_tangent.y * p2.yv;
+
+        // For elastic collisions, the velocities along the normal direction exchange
+        // since we assume equal mass, the formula simplifies
+        let v1n_final = v2n;
+        let v2n_final = v1n;
+
+        // Update velocities, the tangent component remains unchanged
+        p1.xv = v1n_final * unit_normal.x + v1t * unit_tangent.x;
+        p1.yv = v1n_final * unit_normal.y + v1t * unit_tangent.y;
+
+        p2.xv = v2n_final * unit_normal.x + v2t * unit_tangent.x;
+        p2.yv = v2n_final * unit_normal.y + v2t * unit_tangent.y;
+    }
+}
+
+// Implementing the Sub trait to overload the '-' operator for Point
+impl<'a, 'b> std::ops::Sub<&'b Point> for &'a Point {
+    type Output = Point;
+
+    fn sub(self, other: &'b Point) -> Point {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            xv: self.xv - other.xv,
+            yv: self.yv - other.yv,
+        }
+    }
 }
 
 struct Background {
@@ -189,8 +248,8 @@ impl Background {
             new_points.push(Point {
                 x: rng.gen_range(0.0..screen_size.width()),
                 y: rng.gen_range(0.0..screen_size.height()),
-                xv: rng.gen_range(-500.0..=500.0),
-                yv: rng.gen_range(-500.0..=500.0),
+                xv: rng.gen_range(-20.0..=20.0),
+                yv: rng.gen_range(-20.0..=20.0),
             });
         }
         self.points = new_points;
@@ -203,17 +262,19 @@ impl Background {
             point.x += point.xv * dt * 10.;
             point.y += point.yv * dt * 10.;
 
+            //point.xv += 9.8 * dt * 10.;
+            point.yv += 0.98 * dt * 10.;
+
             // Repel from mouse cursor
             let distance_to_mouse = (egui::Pos2::new(point.x, point.y) - mouse_pos).length();
             if distance_to_mouse < 60.0 {
                 let direction = (egui::Pos2::new(point.x, point.y) - mouse_pos).normalized();
-                point.xv += direction.x * 0.5;
-                point.yv += direction.y * 0.5;
+                point.xv += direction.x * 30.;
+                point.yv += direction.y * 30.;
             }
 
-            // Dampen velocity if above threshold
-            point.xv *= if point.xv.abs() > 12.0 { 0.92 } else { 1.0 };
-            point.yv *= if point.yv.abs() > 12.0 { 0.92 } else { 1.0 };
+            point.xv *= 0.999;
+            point.yv *= 0.999;
 
             // Wrap around screen edges
             point.x = point.x.rem_euclid(screen_size.width());
@@ -254,22 +315,32 @@ impl Background {
         }
     }
 
+    fn get_two_mut(slice: &mut [Point], idx1: usize, idx2: usize) -> (&mut Point, &mut Point) {
+        assert!(idx1 != idx2, "Indices must be distinct");
+        let (first, second) = if idx1 < idx2 {
+            (idx1, idx2)
+        } else {
+            (idx2, idx1)
+        };
+        let (head, tail) = slice.split_at_mut(second);
+        (&mut head[first], &mut tail[0])
+    }
+
     // Returns data for egui to draw, not drawing directly
-    fn prepare_draw_data(&self) -> Vec<DrawCommand> {
+    fn prepare_draw_data(&mut self) -> Vec<DrawCommand> {
         let mut commands = Vec::new();
 
         for &point in &self.points {
             commands.push(DrawCommand::Circle {
                 center: egui::Pos2::new(point.x, point.y),
-                radius: 3.0,
+                radius: 5.0,
                 color: egui::Color32::from_gray(200),
             });
         }
 
         for &(idx1, idx2) in &self.collisions {
-            let point = &self.points[idx1];
-            let other = &self.points[idx2];
-            let dist = distance(point, other);
+            let (point, other) = Background::get_two_mut(&mut self.points, idx1, idx2);
+            let dist = Point::distance(point, other);
 
             if dist < PT_LINE_DISTANCE {
                 let opacity = (PT_LINE_DISTANCE - dist) / PT_LINE_DISTANCE;
@@ -284,12 +355,15 @@ impl Background {
                     color,
                 });
             }
+            if dist < 5.0 {
+                Point::elastic_collision(point, other);
+            }
         }
 
         commands
     }
 
-    fn render_draw_data(&self, painter: egui::Painter) {
+    fn render_draw_data(&mut self, painter: egui::Painter) {
         for command in self.prepare_draw_data() {
             match command {
                 DrawCommand::Circle {
